@@ -209,16 +209,38 @@ FAILED pruebas/test_etapa2_acoplamiento.py::test_el_caso_de_uso_no_recibe_diccio
 
 ## Etapa 3 — Abstracción y reuso
 
-**Predicción:**
+**Predicción:** Creo que van a haber 4 coincidencias del grep en clinicasegura/, siento que las de legado.py en buscar_paciente() y reporte()
 
-**Observación:**
+**Observación:** El grep encontró 7 coincidencias en archivos de texto y 4 más en binarios. Aunque 4 vienen de la palabra data dentro de "dataclasses" en modelos.py y no tienen nada que ver con el json del proveedor. Solo 3 son problema real: legado.py:125 (un parámetro de urllib) y legado.py:150-151 donde si es un problema  paciente["data"]["attributes"]["risk_lvl"]. Mi predicción en número fue baja pero si fue buena al conciderar legado.py como problema.
 
 ```
+Nicole@DESKTOP-4CA2HN8 MINGW64 ~/Documents/GitHub/practica-principios-diseno (main)
+$ grep -rn 'data\|attributes\|full_name\|risk_lvl' clinicasegura/
+clinicasegura/dominio/modelos.py:7:from dataclasses import dataclass
+clinicasegura/dominio/modelos.py:10:@dataclass(frozen=True)
+clinicasegura/dominio/modelos.py:15:@dataclass(frozen=True)
+clinicasegura/dominio/modelos.py:23:@dataclass(frozen=True)
+Binary file clinicasegura/dominio/__pycache__/errores.cpython-313.pyc matches
+Binary file clinicasegura/dominio/__pycache__/modelos.cpython-313.pyc matches
+Binary file clinicasegura/dominio/__pycache__/servicio.cpython-313.pyc matches
+clinicasegura/legado.py:125:                    data=json.dumps(cuerpo).encode("utf-8"),
+clinicasegura/legado.py:150:            paciente["data"]["attributes"]["full_name"],
+clinicasegura/legado.py:151:            paciente["data"]["attributes"]["risk_lvl"],
+Binary file clinicasegura/__pycache__/legado.cpython-313.pyc matches
+(.venv)
+Nicole@DESKTOP-4CA2HN8 MINGW64 ~/Documents/GitHub/practica-principios-diseno (main)
+$
+
 ```
 
-**Explicación:**
+**Explicación:** La predicción de 4 se quedó corta contra 7 coincidencias de texto reales pero 4 de esas eran falsos positivos de la palabra data dentro de dataclasses. Repetí el grep al cerrar la etapa y el resultado es el mismo:las únicas 
+coincidencias reales del JSON del proveedor siguen en legado.py:150-151, que por 
+consigna debe permanecer intacto como referencia del "antes". Cero código nuevo 
+(dominio/, aplicacion/, infraestructura/) contiene full_name, risk_lvl o attributes 
+el lugar de impacto real bajó de 2 líneas contaminadas a 0, aunque el grep crudo 
+no lo muestre así por los falsos positivos de "dataclass".
 
-**Sello:**
+**Sello:**  48e8030872082da9
 
 ## Etapa 4 — Flexibilidad, obsolescencia y portabilidad
 
