@@ -244,16 +244,89 @@ no lo muestre así por los falsos positivos de "dataclass".
 
 ## Etapa 4 — Flexibilidad, obsolescencia y portabilidad
 
-**Predicción:**
+**Predicción:** Creo que esto va a fallar. Porque el servicio actual tiene el método emitir() vacío. sin constructor que reciba la lógica. La prueba construye EmisionDeRecetas y llama a emitir esperando que envíe la receta a FarmaViva pero la clase ahorita no hace eso asi que fallaría .
 
 **Observación:**
+Salieron 4 pruebas mal y 3 bien. Se cumplió lo que predije: una de las pruebas 
+falla porque intenta crear EmisionDeRecetas() pasándole pasarelas, reloj, folios 
+y bitacora, pero mi clase todavía no tiene un constructor que reciba esas cosas, 
+así que Python tira error. Las otras 3 fallan porque faltan archivos que no he 
+creado todavía (infraestructura/registro.py y arranque.py) y porque dejé sin 
+llenar dos filas de DEPENDENCIAS.md (pytest y pydantic).
 
 ```
+(.venv)
+Nicole@DESKTOP-4CA2HN8 MINGW64 ~/Documents/GitHub/practica-principios-diseno (main)
+$ pytest -m etapa4
+FF..F.F                                                                                                                                                                                                    [100%]
+=================================================================================================== FAILURES ====================================================================================================
+_____________________________________________________________________________ test_se_agrega_una_cadena_nueva_sin_tocar_el_servicio _____________________________________________________________________________
+pruebas\apoyo.py:22: in importar
+    return importlib.import_module(ruta)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'clinicasegura.infraestructura.registro'
+
+During handling of the above exception, another exception occurred:
+pruebas\test_etapa4_flexibilidad.py:94: in test_se_agrega_una_cadena_nueva_sin_tocar_el_servicio
+    construir = obtener("clinicasegura.infraestructura.registro",
+pruebas\apoyo.py:38: in obtener
+    mod = importar(ruta)
+          ^^^^^^^^^^^^^^
+pruebas\apoyo.py:24: in importar
+    pytest.fail(
+E   Failed: Falta el módulo «clinicasegura.infraestructura.registro».
+E      Cree el archivo clinicasegura/infraestructura/registro.py (y el __init__.py de su paquete).
+E      Detalle: No module named 'clinicasegura.infraestructura.registro'
+_____________________________________________________________________________ test_una_cadena_desconocida_lanza_un_error_de_dominio _____________________________________________________________________________
+pruebas\test_etapa4_flexibilidad.py:116: in test_una_cadena_desconocida_lanza_un_error_de_dominio
+    servicio = EmisionDeRecetas(pasarelas={}, reloj=RelojFijo(),
+E   TypeError: EmisionDeRecetas() takes no arguments
+__________________________________________________________________________________ test_la_configuracion_entra_por_el_entorno ___________________________________________________________________________________
+pruebas\apoyo.py:22: in importar
+    return importlib.import_module(ruta)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'clinicasegura.arranque'
+
+During handling of the above exception, another exception occurred:
+pruebas\test_etapa4_flexibilidad.py:152: in test_la_configuracion_entra_por_el_entorno
+    importar("clinicasegura.arranque")
+pruebas\apoyo.py:24: in importar
+    pytest.fail(
+E   Failed: Falta el módulo «clinicasegura.arranque».
+E      Cree el archivo clinicasegura/arranque.py (y el __init__.py de su paquete).
+E      Detalle: No module named 'clinicasegura.arranque'
+_____________________________________________________________________________ test_existe_la_tabla_de_obsolescencia_de_dependencias _____________________________________________________________________________
+pruebas\test_etapa4_flexibilidad.py:202: in test_existe_la_tabla_de_obsolescencia_de_dependencias
+    assert not vacias, "Filas incompletas en DEPENDENCIAS.md: " + ", ".join(vacias)
+E   AssertionError: Filas incompletas en DEPENDENCIAS.md: pytest, pydantic,
+E   assert not ['pytest', 'pydantic', '']
+============================================================================================ short test summary info ============================================================================================
+FAILED pruebas/test_etapa4_flexibilidad.py::test_se_agrega_una_cadena_nueva_sin_tocar_el_servicio - Failed: Falta el módulo «clinicasegura.infraestructura.registro».
+FAILED pruebas/test_etapa4_flexibilidad.py::test_una_cadena_desconocida_lanza_un_error_de_dominio - TypeError: EmisionDeRecetas() takes no arguments
+FAILED pruebas/test_etapa4_flexibilidad.py::test_la_configuracion_entra_por_el_entorno - Failed: Falta el módulo «clinicasegura.arranque».
+FAILED pruebas/test_etapa4_flexibilidad.py::test_existe_la_tabla_de_obsolescencia_de_dependencias - AssertionError: Filas incompletas en DEPENDENCIAS.md: pytest, pydantic,
+4 failed, 3 passed, 77 deselected in 0.24s
+(.venv)
+
 ```
 
-**Explicación:**
-
-**Sello:**
+**Explicación:**Mi predicción de que iba a fallar se cumplió, pero duré mas de lo que esperaba para llegar a verde. Primero falló por el constructor 
+vacío de EmisionDeRecetas, tal como anticipé (servicio.py, antes sin __init__). 
+Después de agregar el constructor y el registro (infraestructura/registro.py:10), 
+aparecieron dos problemas que no había anticipado: Receta no tenía el campo 
+medicamento que el test necesitaba (modelos.py), y Despacho exigía recargo como 
+argumento obligatorio cuando el test lo omitía (modelos.py). Ambos se resolvieron 
+agregando el campo faltante y dándole un valor por defecto a recargo. La lección 
+real de la etapa: una vez que el servicio busca en el registro por nombre 
+(servicio.py:19, self.pasarelas.get(cadena)) en vez de ramificar con if/elif, 
+agregar FarmaViva no tocó absolutamente nada del servicio.
+**Sello:** adbf78835f407e2f
 
 ## Etapa 5 — Testabilidad
 

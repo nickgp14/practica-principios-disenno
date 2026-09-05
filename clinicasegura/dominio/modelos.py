@@ -5,6 +5,7 @@ invariantes que los hacen válidos. Son inmutables (frozen) porque un valor
 del dominio que se puede mutar desde fuera no tiene garantías que valgan.
 """
 from dataclasses import dataclass
+from decimal import Decimal
 
 
 @dataclass(frozen=True)
@@ -15,8 +16,9 @@ class Cedula:
 @dataclass(frozen=True)
 class Receta:
     cedula: Cedula
+    medicamento: str
     dias: int
-    dosis_mg: float
+    dosis_mg: Decimal
     riesgo_alto: bool = False
 
 
@@ -25,4 +27,4 @@ class Despacho:
     folio: str
     cadena: str
     vence: str 
-    recargo: float
+    recargo: Decimal = Decimal("0")
