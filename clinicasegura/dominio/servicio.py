@@ -8,7 +8,7 @@ pasarela más al registro que se le pasa desde afuera.
 from clinicasegura.dominio.errores import CadenaNoSoportada
 from clinicasegura.dominio.modelos import Despacho, Receta
 from clinicasegura.dominio.reglas import calcular_recargo
-
+from datetime import timedelta
 
 class EmisionDeRecetas:
     def __init__(self, pasarelas, reloj, folios, bitacora):
@@ -25,7 +25,7 @@ class EmisionDeRecetas:
             )
 
         folio = self.folios.siguiente()
-        vence = self.reloj.ahora()
+        vence = self.reloj.ahora() + timedelta(days=30)  
 
         despacho = pasarela.enviar(receta, folio=folio, vence=vence)
 

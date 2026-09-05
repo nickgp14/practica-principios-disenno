@@ -330,16 +330,61 @@ agregar FarmaViva no tocó absolutamente nada del servicio.
 
 ## Etapa 5 — Testabilidad
 
-**Predicción:**
+**Predicción:** Creo que van a pasar 5 de los 7 test.Mi servicio ya recibe 
+pasarelas, reloj, folios y bitacora por constructor desde la Etapa 4, así que 
+espero que pasen: el test del constructor con los 4 nombres exactos, el de la 
+vigencia determinista con reloj fijo, el del folio predecible, el de que la 
+prueba corre sin red (con la pasarela falsa), y el de que se puede observar el 
+evento en bitácora. Los 2 que creo que van a fallar son 
+test_el_servicio_no_construye_sus_propias_dependencias (no estoy segura de que 
+mi servicio no tenga rastros de los "cuatro enemigos") y 
+test_el_estudiante_escribio_al_menos_tres_pruebas_propias, porque todavía no he 
+creado la carpeta mis_pruebas/ con mis propios tests.
 
-**Observación:**
+**Observación:** Acerté el número exacto, uno de los fallos era la falta de mis pruebas y el otro no fue el que pensé, en lugar del que dije falló est_la_vigencia_es_determinista_porque_el_reloj_se_inyecta, esto porque no anticipé que mi servicio calcula vence= self.reloj.ahora () pero nunca suma los 30 días de vigencia.
 
 ```
+Nicole@DESKTOP-4CA2HN8 MINGW64 ~/Documents/GitHub/practica-principios-diseno (main)
+$ pytest -m etapa5
+.F....F                                                                                                                                                                                                    [100%]
+=================================================================================================== FAILURES ====================================================================================================
+__________________________________________________________________________ test_la_vigencia_es_determinista_porque_el_reloj_se_inyecta __________________________________________________________________________
+pruebas\test_etapa5_testabilidad.py:120: in test_la_vigencia_es_determinista_porque_el_reloj_se_inyecta
+    assert real == esperado, (
+E   AssertionError: La vigencia debe ser de 30 días desde el reloj inyectado. Se esperaba 2026-03-31 y llegó 2026-03-01.
+E   assert datetime.date(2026, 3, 1) == datetime.date(2026, 3, 31)
+___________________________________________________________________________ test_el_estudiante_escribio_al_menos_tres_pruebas_propias ___________________________________________________________________________
+pruebas\test_etapa5_testabilidad.py:174: in test_el_estudiante_escribio_al_menos_tres_pruebas_propias
+    pytest.fail(
+E   Failed: Falta la carpeta mis_pruebas/ con sus propias pruebas.
+E      Escriba al menos tres que antes eran imposibles:
+E        1) la vigencia con un reloj fijo,
+E        2) la cadena caída (la pasarela lanza TimeoutError),
+E        3) una receta inválida rechazada en el borde.
+============================================================================================ short test summary info ============================================================================================
+FAILED pruebas/test_etapa5_testabilidad.py::test_la_vigencia_es_determinista_porque_el_reloj_se_inyecta - AssertionError: La vigencia debe ser de 30 días desde el reloj inyectado. Se esperaba 2026-03-31 y llegó 2026-03-01.
+FAILED pruebas/test_etapa5_testabilidad.py::test_el_estudiante_escribio_al_menos_tres_pruebas_propias - Failed: Falta la carpeta mis_pruebas/ con sus propias pruebas.
+2 failed, 5 passed, 77 deselected in 0.15s
+(.venv)
+Nicole@DESKTOP-4CA2HN8 MINGW64 ~/Documents/GitHub/practica-principios-diseno (main)
+$
+
 ```
 
-**Explicación:**
+**Explicación:**Predije que pasarían 5 de 7 y acerté el número exacto, aunque 
+no acerté cuál de los 7 sería el segundo fallo. El que no anticipé fue 
+test_la_vigencia_es_determinista_porque_el_reloj_se_inyecta: mi servicio.py 
+calculaba vence = self.reloj.ahora() pero nunca sumaba los 30 días de vigencia 
+(línea corregida en servicio.py, agregando + timedelta(days=30)). Al escribir 
+mis propias 3 pruebas en mis_pruebas/test_mis_pruebas.py, confirmé algo 
+importante: mis dos primeras pruebas (vigencia con reloj fijo, línea 63; cadena 
+caída con TimeoutError, línea 76) pasan sin problema porque el servicio ya 
+recibe todo por constructor. Pero la tercera (receta con días negativos, línea 
+93 ) falla a propósito: Receta en modelos.py es solo un dataclass sin 
+validación, así que acepta cualquier valor. Eso confirma que la validación real 
+es trabajo de la Etapa 6, no de esta.
 
-**Sello:**
+**Sello:** 4ea5340d042e150c
 
 ## Etapa 6 — Diseño defensivo
 
