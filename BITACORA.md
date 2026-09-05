@@ -388,16 +388,32 @@ es trabajo de la Etapa 6, no de esta.
 
 ## Etapa 6 — Diseño defensivo
 
-**Predicción:**
+**Predicción:**Con python normal, va a fallar con AssertionError porque el assert "los dias deben ser positivos" está activo y dias=0 no es mayor que cero.Con python -O, creo que no va a fallar si no que el código sigue corriendo con dias=0 sin ninguna advertencia. El recargo terminaría en 250 * 0 = 0, y la receta se "emitiría" con normalidad aparente, sin que nadie note que algo está mal.
 
-**Observación:**
+**Observación:** 
+Con python normal, el assert de legado.py:62 detiene la ejecución de inmediato con AssertionError, tal como predije. Con python -O, el resultado fue peor de lo que anticipé pues el programa ignora con dias=0 y llegar hasta intentar una conexión HTTPS real a la URL de farmauno (legado.py:80, dentro de _post), quedándose colgado hasta que lo interrumpí manualmente con Ctrl+C. Esto confirma que un assert desactivado no es solo "sin protección" si no que el dato inválido se propaga hasta un efecto de borde real (una llamada de red) sin ningún límite, combinándose con el problema del while True sin límite.
 
 ```
+Nicole@DESKTOP-4CA2HN8 MINGW64 ~/Documents/GitHub/practica-principios-diseno (main)
+$ python -c "from clinicasegura.legado import ServicioRecetas as S; S().emitir({'cedula':'x','dias':0,'dosis_mg':1}, 'farmauno')"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from clinicasegura.legado import ServicioRecetas as S; S().emitir({'cedula':'x','dias':0,'dosis_mg':1}, 'farmauno')
+                                                           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nicole\Documents\GitHub\practica-principios-diseno\clinicasegura\legado.py", line 62, in emitir
+    assert datos["dias"] > 0, "los dias deben ser positivos"
+           ^^^^^^^^^^^^^^^^^
+AssertionError: los dias deben ser positivos
+(.venv)
+Nicole@DESKTOP-4CA2HN8 MINGW64 ~/Documents/GitHub/practica-principios-diseno (main)
+$ python -O -c "from clinicasegura.legado import ServicioRecetas as S; S().emitir({'cedula':'x','dias':0,'dosis_mg':1}, 'farmauno')"
+
+[sin salida]
 ```
 
-**Explicación:**
+**Explicación:** Se confirmó exactamente mi predicción sobre el assert desapareciendo con -O (legado.py:62), incluso peor de lo esperado: el programa no solo "sigue sin avisar", sino que se cuelga intentando una conexión HTTPS real (legado.py:80). Para resolver esto construí aplicacion/borde.py con SolicitudReceta (pydantic, extra="forbid", frozen=True), que valida cédula, días y dosis con field_validator en vez de assert. También tuve que envolver la llamada a la pasarela en servicio.py con un try/except que convierte cualquier error técnico en FarmaciaNoDisponible con contexto (folio y cadena).
 
-**Sello:**
+**Sello:** 9635c1b478de43f7
 
 ## Cierre — Los principios en conflicto
 
@@ -405,5 +421,23 @@ Nombre dos principios que se estorbaron entre sí en SU rediseño, y con qué
 criterio resolvió el conflicto. Cite el archivo donde se ve la decisión.
 
 **Conflicto 1:**
+Cuando hice calcular_recargo(), la dejé con solo 3 datos de entrada (días, 
+tarifa y si hay riesgo) porque entre menos cosas reciba una función, más fácil 
+es de entender y usar. Pero después, cuando calculé la fecha de vencimiento en 
+servicio.py, en vez de pasarle también el numero de días de vigencia como un 
+dato más, lo dejé fijo en el código (30 días escrito directo). Si mañana quisieran cambiar la vigencia a 60 días, hay que meterse a 
+modificar el código en vez de solo cambiar un valor de configuración. Elegí 
+mantener las funciones simples aunque eso significara perder algo de 
+flexibilidad, porque las pruebas solo pedían que el resultado diera bien (30 
+días después), no que ese número se pudiera cambiar desde afuera.
 
 **Conflicto 2:**
+Para poder probar EmisionDeRecetas sin dependr de internet, de una base de 
+datos real o de la hora del computador, tuve que hacer que el constructor 
+reciba 4 cosas: pasarelas, reloj, folios y bitacora. El problema es que eso 
+hace que usar la clase sea más complicado que antes: antes de poder emitir una 
+receta, hay que armar esos 4 objetos primero. Con el código viejo, uno solo 
+hacía ServicioRecetas() y ya, sin pasarle nada. Elegí que fuera más incómodo 
+de usar pero que sí se pudiera probar de verdad, porque sin eso no había forma 
+de hacer pruebas con una fecha fija o un folio predecible, que era justo lo 
+que pedía la Etapa 5.
