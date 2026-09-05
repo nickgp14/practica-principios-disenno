@@ -113,16 +113,99 @@ $
 
 ## Etapa 2 — Reducir el acoplamiento
 
-**Predicción:**
+**Predicción:** Creo que hasta 4 lugares cambian el comportamiento si se modifica CONFIG["vigencia_dias"], porque la línea donde se calcula `vence` en def emitir y los bloques de farmauno,saludtotal y cruzverde usan el valor `vence`. Aunque solo hay una lectura como tal de CONFIG el efecto se extiende por el if/elif.
 
-**Observación:**
+**Observación:** cuando se ejecuta el comando no hay ningun error o advertencia es un cambio sigiloso. Cualquier instancia de ServicioRecetas que se haga luego de esa línea en cualquier parte va a calcular vigencias de 1 día en vez de 30. Es un problema de acoplamiento porque existe pero no está declarada en ninguna firma de función.
 
 ```
+Nicole@DESKTOP-4CA2HN8 MINGW64 ~/Documents/GitHub/practica-principios-diseno (main)
+$ python
+Python 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from clinicasegura.legado import CONFIG, ServicioRecetas
+... CONFIG["vigencia_dias"] = 1
+...
+>>>
+(.venv)
+Nicole@DESKTOP-4CA2HN8 MINGW64 ~/Documents/GitHub/practica-principios-diseno (main)
+$ pytest -m etapa2
+.FFF.                                                                                                                                                                                                      [100%]
+=================================================================================================== FAILURES ====================================================================================================
+________________________________________________________________________ test_la_regla_de_negocio_es_una_funcion_pura_de_firma_estrecha _________________________________________________________________________
+pruebas\apoyo.py:22: in importar
+    return importlib.import_module(ruta)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'clinicasegura.dominio.reglas'
+
+During handling of the above exception, another exception occurred:
+pruebas\test_etapa2_acoplamiento.py:68: in test_la_regla_de_negocio_es_una_funcion_pura_de_firma_estrecha
+    calcular = obtener("clinicasegura.dominio.reglas", "calcular_recargo")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pruebas\apoyo.py:38: in obtener
+    mod = importar(ruta)
+          ^^^^^^^^^^^^^^
+pruebas\apoyo.py:24: in importar
+    pytest.fail(
+E   Failed: Falta el módulo «clinicasegura.dominio.reglas».
+E      Cree el archivo clinicasegura/dominio/reglas.py (y el __init__.py de su paquete).
+E      Detalle: No module named 'clinicasegura.dominio.reglas'
+_______________________________________________________________________ test_la_regla_de_negocio_no_tiene_efectos_ni_depende_del_entorno ________________________________________________________________________
+pruebas\apoyo.py:22: in importar
+    return importlib.import_module(ruta)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'clinicasegura.dominio.reglas'
+
+During handling of the above exception, another exception occurred:
+pruebas\test_etapa2_acoplamiento.py:87: in test_la_regla_de_negocio_no_tiene_efectos_ni_depende_del_entorno
+    calcular = obtener("clinicasegura.dominio.reglas", "calcular_recargo")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pruebas\apoyo.py:38: in obtener
+    mod = importar(ruta)
+          ^^^^^^^^^^^^^^
+pruebas\apoyo.py:24: in importar
+    pytest.fail(
+E   Failed: Falta el módulo «clinicasegura.dominio.reglas».
+E      Cree el archivo clinicasegura/dominio/reglas.py (y el __init__.py de su paquete).
+E      Detalle: No module named 'clinicasegura.dominio.reglas'
+_______________________________________________________________________________ test_el_caso_de_uso_no_recibe_diccionarios_crudos _______________________________________________________________________________
+pruebas\apoyo.py:22: in importar
+    return importlib.import_module(ruta)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'clinicasegura.dominio.servicio'
+
+During handling of the above exception, another exception occurred:
+pruebas\test_etapa2_acoplamiento.py:106: in test_el_caso_de_uso_no_recibe_diccionarios_crudos
+    servicio = obtener("clinicasegura.dominio.servicio", "EmisionDeRecetas")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pruebas\apoyo.py:38: in obtener
+    mod = importar(ruta)
+          ^^^^^^^^^^^^^^
+pruebas\apoyo.py:24: in importar
+    pytest.fail(
+E   Failed: Falta el módulo «clinicasegura.dominio.servicio».
+E      Cree el archivo clinicasegura/dominio/servicio.py (y el __init__.py de su paquete).
+E      Detalle: No module named 'clinicasegura.dominio.servicio'
+============================================================================================ short test summary info ============================================================================================
+FAILED pruebas/test_etapa2_acoplamiento.py::test_la_regla_de_negocio_es_una_funcion_pura_de_firma_estrecha - Failed: Falta el módulo «clinicasegura.dominio.reglas».
+FAILED pruebas/test_etapa2_acoplamiento.py::test_la_regla_de_negocio_no_tiene_efectos_ni_depende_del_entorno - Failed: Falta el módulo «clinicasegura.dominio.reglas».
+FAILED pruebas/test_etapa2_acoplamiento.py::test_el_caso_de_uso_no_recibe_diccionarios_crudos - Failed: Falta el módulo «clinicasegura.dominio.servicio».
+3 failed, 2 passed, 79 deselected in 0.33s
+(.venv)
+
 ```
 
-**Explicación:**
+**Explicación:** La predicción que hice de 4 lugares estuvo bien para describir el efecto de acoplamiento básico, pero el arreglo real no era declarar la dependencia en esos 4 lugares era eliminarla del todo.calcular_recargo() en dominio/reglas.py (línea 14) ahora recibe tarifa_diaria como parámetro explícito en vez de leer CONFIG global, así que ya no hay ningún lugar donde un cambio externo silencioso pueda afectar el cálculo.
 
-**Sello:**
+**Sello:** f5c6e182ed1c9acb
 
 ## Etapa 3 — Abstracción y reuso
 
