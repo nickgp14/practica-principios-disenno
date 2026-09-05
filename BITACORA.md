@@ -109,7 +109,7 @@ $
 3 test fallan porque faltan módulos nuevos. Los otros 4 pasan porqie no hay problemas (dominio no importa infraestructura, no llama al reloj y nada importa legado.py)
 **Explicación:** La predición de 3 archivos no fue del todo correcta porque si era el contenido(tipos,funciones,errores) pero son 3 paquetes completos con dominio, aplicación e infraestructura.
 
-**Sello:**
+**Sello:** fa2d7d8876cee3ab
 
 ## Etapa 2 — Reducir el acoplamiento
 
